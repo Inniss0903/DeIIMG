@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 //    Graph g = io::getUndirGraphFromFile(path);
 //    TwoDimSE twoDimSe(g);
 //    twoDimSe.min2dSE("2D", true);
-    path = "/Users/gem/PyProject/SE_image_seg/data/butterfly.jpg";
+    path = "/home/gemwang/superpixel-benchmark/data/BSDS500/images/test/2018.jpg";
     imgsegm(path);
 
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
