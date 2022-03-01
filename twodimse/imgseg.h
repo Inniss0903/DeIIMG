@@ -17,6 +17,8 @@
 
 #include <Graph.h>
 #include <Edge.h>
+#include <dirent.h>
+#include "se.h"
 
 #define N_CHANNELS 3
 #define DIFF 1e-40
@@ -277,20 +279,22 @@ struct imgseg {
 
 
     Mat deIIMG_2D(const unordered_map<int, set<int>> &communities, const Mat &img) {
-        return deIIMG_2D(communities, img, false, true);
+        return deIIMG_2D(communities, img, false, true, "");
     }
 
-    Mat deIIMG_2D(const unordered_map<int, set<int>> &communities, const Mat &img, bool randomColor, bool showBDY) {
+    Mat deIIMG_2D(const unordered_map<int, set<int>> &communities, const Mat &img, bool randomColor, bool showBDY,
+                  string segFile) {
         Mat outputImage(img.rows, img.cols, img.type());
         commAverage.resize(communities.size());
+        vector<vector<int>> segMap(img.rows, vector<int>(img.cols, 0));
         int index = -1;
-        for (auto &comm : communities) {
+        for (auto &comm: communities) {
             vector<int> boundaries = findBoundary(comm.second, img.cols);
             //分割区域的颜色表示
             commAverage[++index] = computeCommAve(img, comm.second);
             vector<int> regionColor = randomColor ? randomRegionColor() : commAverage[index];
 
-            for (auto &p : comm.second) {
+            for (auto &p: comm.second) {
                 int loc = p - 1;
                 int y = loc / img.cols;
                 int x = loc % img.cols;
@@ -303,8 +307,14 @@ struct imgseg {
                     for (int c = 0; c < N_CHANNELS; ++c)
                         pix[c] = regionColor[c];
                 }
+                segMap[y][x] = index + 1;
                 outputImage.at<Vec3b>(y, x) = pix;
             }
+        }
+
+        if (segFile != "") {
+            char spliteChar = ' ';
+            write2file(segMap, segFile, spliteChar);
         }
 
         return outputImage;
@@ -313,24 +323,26 @@ struct imgseg {
 
     Mat deIIMG_3D(const unordered_map<int, set<int>> &communities2D, const unordered_map<int, set<int>> &communities3D,
                   const Mat &img) {
-        return deIIMG_3D(communities2D, communities3D, img, false, false, false);
+        return deIIMG_3D(communities2D, communities3D, img, false, false, false, "");
     }
 
     Mat deIIMG_3D(const unordered_map<int, set<int>> &communities2D, const unordered_map<int, set<int>> &communities3D,
-                  const Mat &img, bool showBDY, bool is2S, bool randomColor) {
+                  const Mat &img, bool showBDY, bool is2S, bool randomColor, string segFile) {
         Mat outputImage(img.rows, img.cols, img.type());
+        vector<vector<int>> segMap(img.rows, vector<int>(img.cols, 0));
         vector<set<int>> comms2D;
+        int label = 0;
 
-        for (auto &comm : communities2D) {
+        for (auto &comm: communities2D) {
             comms2D.push_back(comm.second);
         }
 
-        for (auto &community : communities3D) {
+        for (auto &community: communities3D) {
             //对应到图像像素点的社区
             set<int> realCommunity;
             //每个分割区域的颜色表示
             vector<int> regionColor(3);
-            for (int comm2DIndex : community.second) {
+            for (int comm2DIndex: community.second) {
                 realCommunity.insert(comms2D[comm2DIndex - 1].begin(), comms2D[comm2DIndex - 1].end());
             }
 
@@ -347,7 +359,7 @@ struct imgseg {
             }
 
             //给每个分割区域中的像素点重新赋值
-            for (int p : realCommunity) {
+            for (int p: realCommunity) {
                 int loc = p - 1;
                 int y = loc / img.cols;
                 int x = loc % img.cols;
@@ -359,8 +371,14 @@ struct imgseg {
                     for (int c = 0; c < N_CHANNELS; ++c)
                         pix[c] = regionColor[c];
                 }
+                segMap[y][x] = ++label;
                 outputImage.at<Vec3b>(y, x) = pix;
             }
+        }
+
+        if (segFile != "") {
+            char sp = ' ';
+            write2file(segMap, segFile, sp);
         }
 
         return outputImage;
@@ -368,7 +386,7 @@ struct imgseg {
 
     vector<int> compute2SCommAve(const set<int> &community) {
         vector<int> color(3);
-        for (int c : community) {
+        for (int c: community) {
             for (int i = 0; i < N_CHANNELS; i++) {
                 color[i] += commAverage[c - 1][i];
             }
@@ -390,7 +408,7 @@ struct imgseg {
      */
     vector<int> computeCommAve(const Mat &img, const set<int> &community) {
         vector<int> color(3);
-        for (int pix : community) {
+        for (int pix: community) {
             int loc = pix - 1;
             int y = loc / img.cols;
             int x = loc % img.cols;
@@ -400,7 +418,7 @@ struct imgseg {
             }
         }
 
-        for (int &c : color) {
+        for (int &c: color) {
             c /= community.size();
         }
 
@@ -414,7 +432,7 @@ struct imgseg {
      */
     vector<int> randomRegionColor() {
         vector<int> rColor(3);
-        for (int &c : rColor) {
+        for (int &c: rColor) {
             c = RANDOM(255);
         }
         return rColor;
@@ -423,7 +441,7 @@ struct imgseg {
 
     vector<int> findBoundary(const set<int> &community, int width) {
         vector<int> boundaries;
-        for (int p : community) {
+        for (int p: community) {
             if (!(COMMUNITY_CONTAINS(p + 1) && COMMUNITY_CONTAINS(p - 1)
                   && COMMUNITY_CONTAINS(p + width) && COMMUNITY_CONTAINS(p - width))) {
                 boundaries.push_back(p);
@@ -431,6 +449,65 @@ struct imgseg {
         }
 
         return boundaries;
+    }
+
+    void write2file(vector<vector<int>> segMap, string file, char spl) {
+        ofstream fs(file, ios::trunc);
+        int m = segMap.size();
+        int n = segMap[0].size();
+
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n - 1; ++j) {
+                fs << segMap[i][j] << spl;
+            }
+            fs << segMap[i][n - 1] << "\n";
+        }
+
+        fs.close();
+    }
+
+    void segDir(const char *dirPath) {
+        vector<double> tSize = {1.0};
+        DIR *dir = opendir(dirPath);
+        struct dirent *ent;
+        if (dir == nullptr) {
+            cout << "error: can not open dir!!!" << endl;
+        }
+        /* print all the files and directories within directory */
+        while ((ent = readdir(dir)) != nullptr) {
+            string name = ent->d_name;
+            if (name != "." && name != ".." && name != "Thumbs.db") {
+                vector<string> splites;
+                splitString(name, splites, ".");
+                string imgName = splites[0];
+                cout << imgName << endl;
+                Mat img = imread(format(dirPath) + "/" + name);
+
+                for (double t: tSize) {
+                    t1 = t;
+                    Graph g = constructGraph(img);
+                    TwoDimSE se(g);
+                    se.min2dSE(true);
+                    deIIMG_2D(se.communities, img, false, false, "~/segRes/test/" + imgName);
+                }
+            }
+        }
+        closedir(dir);
+
+    }
+
+    void splitString(const std::string &s, std::vector<std::string> &v, const std::string &c) {
+        std::string::size_type pos1, pos2;
+        pos2 = s.find(c);
+        pos1 = 0;
+        while (std::string::npos != pos2) {
+            v.push_back(s.substr(pos1, pos2 - pos1));
+
+            pos1 = pos2 + c.size();
+            pos2 = s.find(c, pos1);
+        }
+        if (pos1 != s.length())
+            v.push_back(s.substr(pos1));
     }
 };
 

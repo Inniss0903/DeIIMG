@@ -39,19 +39,20 @@ void printTimeLog(struct timespec *diff) {
 }
 
 void imgsegm(const string &path) {
-    cv::Mat img = cv::imread(path, IMREAD_COLOR);
+    cv::Mat img = cv::imread(path+"376086.jpg", IMREAD_COLOR);
     imgseg imgseg;
+//    imgseg.segDir(path.c_str());
     Graph g = imgseg.constructGraph(img);
     TwoDimSE se(g);
     se.min2dSE("t2d", true);
     cv::Mat res2D = imgseg.deIIMG_2D(se.communities, img);
 
-    Graph g2 = imgseg.constructGraphBy2D(se.communities, 5);
-    TwoDimSE se2(g2);
-    se2.min2dSE("3d", true);
-    cv::Mat res3D = imgseg.deIIMG_3D(se.communities, se2.communities, img);
+//    Graph g2 = imgseg.constructGraphBy2D(se.communities, 5);
+//    TwoDimSE se2(g2);
+//    se2.min2dSE("3d", true);
+//    cv::Mat res3D = imgseg.deIIMG_3D(se.communities, se2.communities, img);
     cv::imshow("2d", res2D);
-    imshow("3d", res3D);
+//    imshow("3d", res3D);
     cv::waitKeyEx();
 }
 
@@ -64,8 +65,9 @@ int main(int argc, char **argv) {
 //    Graph g = io::getUndirGraphFromFile(path);
 //    TwoDimSE twoDimSe(g);
 //    twoDimSe.min2dSE("2D", true);
-    path = "/home/gemwang/superpixel-benchmark/data/BSDS500/images/test/2018.jpg";
+    path = "/home/gemwang/superpixel-benchmark/data/BSDS500/images/test/";
     imgsegm(path);
+
 
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
     timespec_subtract(&diff, &end, &start);
