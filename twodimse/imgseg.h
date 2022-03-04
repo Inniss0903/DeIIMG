@@ -451,7 +451,7 @@ struct imgseg {
         return boundaries;
     }
 
-    void write2file(vector<vector<int>> segMap, string file, char spl) {
+    void write2file(vector<vector<int>> segMap, const string& file, char spl) {
         ofstream fs(file, ios::trunc);
         int m = segMap.size();
         int n = segMap[0].size();
@@ -466,49 +466,11 @@ struct imgseg {
         fs.close();
     }
 
-    void segDir(const char *dirPath) {
-        vector<double> tSize = {1.0};
-        DIR *dir = opendir(dirPath);
-        struct dirent *ent;
-        if (dir == nullptr) {
-            cout << "error: can not open dir!!!" << endl;
-        }
-        /* print all the files and directories within directory */
-        while ((ent = readdir(dir)) != nullptr) {
-            string name = ent->d_name;
-            if (name != "." && name != ".." && name != "Thumbs.db") {
-                vector<string> splites;
-                splitString(name, splites, ".");
-                string imgName = splites[0];
-                cout << imgName << endl;
-                Mat img = imread(format(dirPath) + "/" + name);
-
-                for (double t: tSize) {
-                    t1 = t;
-                    Graph g = constructGraph(img);
-                    TwoDimSE se(g);
-                    se.min2dSE(true);
-                    deIIMG_2D(se.communities, img, false, false, "~/segRes/test/" + imgName);
-                }
-            }
-        }
-        closedir(dir);
-
+    void clear() {
+        commAverage.clear();
     }
 
-    void splitString(const std::string &s, std::vector<std::string> &v, const std::string &c) {
-        std::string::size_type pos1, pos2;
-        pos2 = s.find(c);
-        pos1 = 0;
-        while (std::string::npos != pos2) {
-            v.push_back(s.substr(pos1, pos2 - pos1));
 
-            pos1 = pos2 + c.size();
-            pos2 = s.find(c, pos1);
-        }
-        if (pos1 != s.length())
-            v.push_back(s.substr(pos1));
-    }
 };
 
 

@@ -28,6 +28,11 @@ public:
     void write2File(std::string file) {
 
     }
+
+    void clear() {
+        weights.clear();
+        connection.clear();
+    }
 };
 
 

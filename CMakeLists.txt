@@ -15,7 +15,7 @@ file(GLOB SRC
 
 include_directories(twodimse)
 include_directories(${OpenCV_INCLUDE_DIRS} PkgConfig::GMP)
-add_executable(DeIIMG main.cpp ${SRC} twodimse/imgseg.cpp)
+add_executable(DeIIMG main.cpp ${SRC} twodimse/imgseg.cpp twodimse/runDataset.h)
 
 target_link_libraries(DeIIMG PkgConfig::GMP)
 target_link_libraries(DeIIMG ${OpenCV_LIBRARIES})

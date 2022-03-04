@@ -283,7 +283,7 @@ struct TwoDimSE {
      */
 
 
-    void ndiInfo() {
+    void ndiInfo() const {
         printf("*****************************************\n");
         printf("The One and Two dimension SE: %f, %f\nDecoding Information : %f\n",
                oneDimSE, twoDimSE, oneDimSE - twoDimSE);
@@ -338,6 +338,16 @@ struct TwoDimSE {
         mpf_class b5 = b4 + a6;
 
         return b5.get_d() / sum_d;
+    }
+
+    void clear() {
+        communities.clear();
+        volumes.clear();
+        gs.clear();
+        cuts.clear();
+        connections.clear();
+        commDeltaHMap.clear();
+        commDeltaHSet.clear();
     }
 };
 
